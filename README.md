@@ -1,36 +1,60 @@
-# DISCONTINUATION OF PROJECT #  
-This project will no longer be maintained by Intel.  
-Intel has ceased development and contributions including, but not limited to, maintenance, bug fixes, new releases, or updates, to this project.  
-Intel no longer accepts patches to this project.  
- If you have an ongoing need to use this project, are interested in independently developing it, or would like to maintain patches for the open source software community, please create your own fork of this project.  
-  
-# AMX-TMUL-Code-Samples-Intel
-Code sample showing Intel® Advanced Matrix Extensions (Intel® AMX) functionality on Intel® Xeon® Scalable processor Max Series and 4th gen Intel® Xeon® Scalable processors.
-
-Intel® AMX now introduces new extensions to the x86 Instruction Set Architecture (ISA) to work on matrices and which may accelerate matrix multiplication in AI workloads. It consists of two components:
-
-1. A set of 2-dimensional registers (tiles), which can hold sub-matrices from larger matrices in memory.
-2. An accelerator called Tile Matrix Multiply (TMUL) which contains instructions that operate on tiles.
-
-This code sample demonstrates testing the new instructions using intrinsic functions.
-
-A code walk-through for this sample can be found at:
-https://www.intel.com/content/www/us/en/developer/articles/code-sample/advanced-matrix-extensions-intrinsics-functions.html
+# Clear Explanatio of AMX-Tile / TMUL Memory Layout Expectations #  
 
 
-## Purpose
+# Purpose
 
-The code sample will multiply matrices A and B of size 16 x 64 containing INT8 values, and accumulate the result to a 16 x 16 matrix C containing INT32 values.
+This repository seeks to provide a simple explanation of the memory layout expectations by AMX Tile registers. Documentation online is somewhat sparse aside from the [parent repo of this fork](https://github.com/intel/AMX-TMUL-Code-Samples), the [intel intrinsics guide](https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#amxtechs=AMX_INT8&ig_expand=6865), and the [Intel ISA extensions reference manual](intel-IDA-ref.pdf).
 
-This code sample is simplified to highlight use of new Intel(R) AMX instructions. It shows use of instructions to configure the tiles, load data from memory into tiles, perform one matrix multiplication on tiles data and copy the result from tiles to memory. It should not be used as a basis for production code. Only for demostration purposes.
+I found determining how to layout the memory in C for AMX intputs a bit confusing from viewing only the original code sample so i decided to put together this repo as a simpler explanation.
 
-## License
 
-This code sample is licensed under MIT license.  
 
-##  Building the `test-amxtile` executable 
 
-### On a Linux* System
+# How AMX Tiles Work
+
+The intel AMX tile extensions provide 2D registers called tiles that enable the computation of an entire matrix multiplication in a single instruction. 
+
+By default, AMX tile argument registers are 16 x 64, containing (u)int8 data. The output accumulator tile is 16x16, containing (u)int32 data.
+
+Here is a brief snapshot of what it looks like to perform a matmul with AMX. src1 and src2 are both 1024 element int8_t C arrays.
+
+    // load tile rows from memory
+    _tile_loadd (2, src1, STRIDE);
+    _tile_loadd (3, src2, STRIDE);
+    _tile_loadd (1, res, STRIDE);
+
+    // compute dot-product of bytes in tiles 
+    _tile_dpbssd (1, 2, 3);
+
+    // store the tile data to memory
+    _tile_stored (1, res, STRIDE);
+
+
+## src1 memory layout
+
+src1 is expected to be a 16x64 matrix stored contiguously in row majory order within an int8_t array of 16x64=1024 elements. This data is stored within the 16x64 tile. 
+
+NOTE: The size/dimmensions of the tile does not necessarily coincide with that of the matrix stored within it (as we will see with src2).
+
+## src2 memory layout
+
+src2 is also a int8_t C array of 1024 elements stored within the 16x64 AMX tile register. 
+
+However, despite being stored in the 16x64 tile, src2 represents a 64x16 matrix. 
+
+The C array that is loaded into the right-hand-side tile register is the contiguous row-major order layout of the transpose of that 64x16 matrix.   
+
+## Visual Example:
+
+For example, if the 16x64 and 64x16 matrices intended to be multiplied look like this:
+
+![Intended Matrices](intended_matrices.png)
+
+Then the representation in memory for loading into AMX tiles will look like this:
+
+![amx c layout](amx_mem_layout.png)
+
+## Building 
 Perform the following steps:
 1. Build the program. 
 
