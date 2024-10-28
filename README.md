@@ -42,8 +42,7 @@ src2 is also a int8_t C array of 1024 elements stored within the 16x64 AMX tile 
 
 However, despite being stored in the 16x64 tile, src2 represents a 64x16 matrix. 
 
-The C array that is loaded into the right-hand-side tile register is stored in column-major order (ie the contiguous row-major order layout of the transpose of that 64x16 matrix).   
-
+The C array that is loaded into the right-hand-side tile register contains the row-major order contiguous data of the 64x16 matrix. However that contiguous stream of data is *filled in along the columns*. This is not quite the same thing as column-major order.
 ## Visual Example:
 
 For example, if the 16x64 and 64x16 matrices intended to be multiplied look like this:
