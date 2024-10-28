@@ -1,4 +1,4 @@
-# Clear Explanatio of AMX-Tile / TMUL Memory Layout Expectations #  
+# Clear Explanation of AMX-Tile / TMUL Memory Layout Expectations #  
 
 
 # Purpose
